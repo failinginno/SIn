@@ -7,6 +7,8 @@ let activeFilter = 'all';
 const ENTRY_TOPIC = '0x9fcdbd517515925d5e946a3bd7b3985b7f45d6c42848d738e8dad721773ae772';
 let purchaseEvents = [];
 let lastEntryBlock = 0;
+let ribbonInitialized = false;
+let lastPoolRenderKey = '';
 const shortWallet = address => `${address.slice(0, 8)}…${address.slice(-4)}`;
 
 async function rpc(method, params = [], url = config.rpcUrl) {
@@ -32,6 +34,8 @@ async function refreshPurchases() {
     const floor = Math.max(Number(config.deploymentBlock || 0), latest - 2500);
     const from = lastEntryBlock ? Math.max(floor, lastEntryBlock + 1) : floor;
     const logRpc = config.logRpcUrl || config.rpcUrl;
+    const previousKeys = purchaseEvents.map(event => event.key).join('|');
+    const changedPools = new Set();
     for (let end = latest; end >= from; end -= 500) {
       const start = Math.max(from, end - 499);
       const logs = await rpc('eth_getLogs', [{ address: config.poolManagerAddress, topics: [ENTRY_TOPIC], fromBlock: `0x${start.toString(16)}`, toBlock: `0x${end.toString(16)}` }], logRpc);
@@ -43,11 +47,18 @@ async function refreshPurchases() {
         if (!/^0x[a-f\d]{40}$/i.test(wallet) || !Number.isSafeInteger(poolId) || !Number.isSafeInteger(quantity) || quantity < 1) return null;
         return { wallet, poolId, quantity, block: Number(BigInt(log.blockNumber)), index: Number(BigInt(log.logIndex)), key: `${log.transactionHash}:${log.logIndex}` };
       }).filter(Boolean);
+      if (lastEntryBlock) parsed.forEach(event => changedPools.add(event.poolId));
       purchaseEvents = [...purchaseEvents, ...parsed].sort((a, b) => b.block - a.block || b.index - a.index).filter((event, index, all) => all.findIndex(item => item.key === event.key) === index).slice(0, 8);
       if (!lastEntryBlock && purchaseEvents.length >= 8) break;
     }
     lastEntryBlock = latest;
-    renderPurchaseRibbon();
+    const keys = purchaseEvents.map(event => event.key).join('|');
+    if (!ribbonInitialized || keys !== previousKeys) { renderPurchaseRibbon(); ribbonInitialized = true; }
+    if (changedPools.size) {
+      const updates = await Promise.all([...changedPools].map(async id => decodePool(id, await read('0x068bcd8d' + BigInt(id).toString(16).padStart(64, '0')))));
+      for (const pool of updates) { const index = pools.findIndex(item => item.id === pool.id); if (index >= 0) pools[index] = pool; }
+      render(); updateMetrics();
+    }
   } catch (error) {
     console.warn('Recent purchase events unavailable:', error);
     renderPurchaseRibbon(purchaseEvents.length ? undefined : 'Recent purchases are temporarily unavailable.');
@@ -92,8 +103,11 @@ function render() {
   const visible = pools.filter(pool => {
     const status = poolStatus(pool);
     return status !== 'closed' && status !== 'expired' && (activeFilter === 'all' || activeFilter === status);
-  });
+  }).sort((a, b) => a.prizeWei === b.prizeWei ? a.id - b.id : a.prizeWei < b.prizeWei ? -1 : 1);
   countLabel.textContent = `${visible.length} open pool${visible.length === 1 ? '' : 's'}`;
+  const key = `${activeFilter}|${visible.map(pool => `${pool.id}:${pool.sold}:${pool.status}:${pool.deadline}`).join('|')}`;
+  if (key === lastPoolRenderKey) return;
+  lastPoolRenderKey = key;
   if (!visible.length) {
     grid.innerHTML = '<div class="pool-card"><h3>No open pools right now.</h3><p>Completed draws and eligible refunds remain available in the App.</p><div class="pool-card__bottom"><a href="./mainnet-app/outcomes.html">View outcomes →</a></div></div>';
     return;
@@ -138,6 +152,7 @@ async function refresh() {
     updateMetrics();
   } catch (error) {
     console.warn('Mainnet pool preview unavailable:', error);
+    lastPoolRenderKey = '';
     if (grid) grid.innerHTML = '<div class="pool-card"><h3>Pool data temporarily unavailable.</h3><p>Open the App to retry the mainnet connection.</p><div class="pool-card__bottom"><a href="./mainnet-app/">Open App →</a></div></div>';
     if (countLabel) countLabel.textContent = 'Live data unavailable';
     document.querySelector('#liveActivity').innerHTML = '<span class="live-feed__index">—</span><b>Live data is temporarily unavailable</b><p>No sample figures are substituted for chain data.</p><a class="section-action" href="./mainnet-app/">Retry in the application <span aria-hidden="true">↗</span></a>';
@@ -154,4 +169,4 @@ document.querySelectorAll('.app-tabs button').forEach(button => button.addEventL
 refresh();
 refreshPurchases();
 setInterval(refresh, 30000);
-setInterval(refreshPurchases, 15000);
+setInterval(refreshPurchases, 3000);

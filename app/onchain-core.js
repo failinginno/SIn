@@ -265,13 +265,54 @@
         for (let start = 0; start < ids.length; start += 6) {
           const batch = await Promise.all(ids.slice(start, start + 6).map(id => this.readPool(id)));
           pools.push(...batch);
-          this.publishPools(pools, walletVersion);
+          // Progressive rendering is useful on the first load only. Replacing the
+          // complete pool list with each batch on every refresh makes the UI flash.
+          if (!this.hasLoadedPools) this.publishPools(pools, walletVersion);
           if (focusedId > 0 && batch.some(pool => pool.id === focusedId)) this.refreshTicketOwners(focusedId).catch(error => console.warn('Ticket-owner lookup unavailable:', error));
         }
         if (this.address) this.balanceWei = BigInt(await this.rpc('eth_getBalance', [this.address, 'latest']));
         this.publishPools(pools, walletVersion);
         this.refreshLogs(walletVersion).catch(error => console.warn('Event history unavailable; direct pool state remains available:', error));
       } finally { this.pending = false; if (walletVersion !== this.walletVersion || this.refreshQueued) { this.refreshQueued = false; this.refresh().catch(error => console.warn('Pool refresh retry failed:', error)); } }
+    }
+    async syncLive() {
+      if (!this.hasLoadedPools || this.pending || this.logRefreshPending || this.livePending) return;
+      this.livePending = true;
+      const walletVersion = this.walletVersion;
+      try {
+        const before = this.events.length;
+        await this.scanLogs(this.pools);
+        if (walletVersion !== this.walletVersion) return;
+        const freshEvents = this.events.slice(before);
+        if (!freshEvents.length) return;
+        const count = Number(BigInt(await this.read(SELECTOR.poolCount)));
+        if (!Number.isSafeInteger(count) || count > 2000) throw new Error('Invalid pool count');
+        const changed = new Set(freshEvents.map(event => event.poolId));
+        for (let id = this.pools.length + 1; id <= count; id++) changed.add(id);
+        const updates = await Promise.all([...changed].filter(id => id > 0 && id <= count).map(id => this.readPool(id)));
+        if (walletVersion !== this.walletVersion) return;
+        const next = new Map(this.pools.map(pool => [pool.id, pool]));
+        for (const pool of updates) {
+          const logs = this.events.filter(event => event.poolId === pool.id);
+          pool.activity = logs.slice(-10).reverse();
+          pool.outcomeEvent = logs.find(event => event.type === 'OutcomeResolved');
+          const byWallet = new Map();
+          for (const event of logs.filter(item => item.type === 'ENTRY')) {
+            const key = event.wallet.toLowerCase();
+            const participant = byWallet.get(key) || { wallet: event.wallet, quantity: 0, amount: 0, ticketIds: [] };
+            participant.quantity += event.quantity;
+            participant.amount += event.amount;
+            for (let ticket = event.start; ticket <= event.end; ticket++) participant.ticketIds.push(ticket);
+            byWallet.set(key, participant);
+          }
+          pool.participants = [...byWallet.values()];
+          next.set(pool.id, pool);
+        }
+        this.publishPools([...next.values()], walletVersion);
+        for (const pool of updates) {
+          if (pool.entriesSold) this.refreshTicketOwners(pool.id).catch(error => console.warn('Ticket-owner lookup unavailable:', error));
+        }
+      } finally { this.livePending = false; }
     }
     async refreshLogs(walletVersion) {
       if (this.logRefreshPending) return;

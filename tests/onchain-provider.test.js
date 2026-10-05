@@ -194,3 +194,25 @@ test('ticket-owner ledger reconstructs buyer counts when event RPC is unavailabl
   assert.deepEqual(p.getPool(1).participants.map(x => x.quantity), [2, 1]);
   assert.deepEqual(p.getPool(1).participants[0].ticketIds, [1, 2]);
 });
+
+test('live sync reads only the pool named by a new purchase and stays silent without new events', async () => {
+  const p = new O.OnchainSingularProvider(config, null, null);
+  p.hasLoadedPools = true;
+  p.pools = [1, 2].map(id => ({ id, entriesSold: 0, entryPrice: 0.01, participants: [], activity: [] }));
+  p.read = async () => '0x2';
+  const reads = [];
+  p.readPool = async id => { reads.push(id); return { id, entriesSold: 1, entryPrice: 0.01, participants: [], activity: [] }; };
+  p.refreshTicketOwners = async () => {};
+  let emissions = 0;
+  p.subscribe(() => emissions++);
+  p.scanLogs = async () => {};
+  await p.syncLive();
+  assert.deepEqual(reads, []);
+  assert.equal(emissions, 0);
+  p.scanLogs = async () => { p.events.push({ type: 'ENTRY', poolId: 2, wallet: address, quantity: 1, amount: 0.01, start: 1, end: 1, time: 1 }); };
+  await p.syncLive();
+  assert.deepEqual(reads, [2]);
+  assert.equal(p.getPool(1).entriesSold, 0);
+  assert.equal(p.getPool(2).entriesSold, 1);
+  assert.equal(emissions, 1);
+});

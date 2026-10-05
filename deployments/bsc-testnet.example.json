@@ -1,0 +1,13 @@
+{
+  "chainId": 97,
+  "poolManager": "<deployed address>",
+  "feeVault": "<deployed address>",
+  "randomnessProvider": "<deployed address>",
+  "deployer": "<address>",
+  "owner": "<address>",
+  "deploymentBlock": null,
+  "deploymentTransactions": [],
+  "compilerVersion": "0.8.24",
+  "sourceCommit": null,
+  "chainlinkSubscriptionId": null
+}

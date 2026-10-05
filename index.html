@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="SINGULAR — fixed-rule onchain prize pools on BNB Chain." />
+  <meta name="theme-color" content="#020308" />
+  <title>SINGULAR — Fixed Rules Public Results</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./protocol.css" />
+  <link rel="stylesheet" href="./experience.css" />
+  <link rel="stylesheet" href="./home-refinement.css" />
+</head>
+<body>
+  <header class="nav shell">
+    <a class="brand" href="#home" aria-label="SINGULAR home"><img src="./assets/singular-logo.png" alt="SINGULAR" /></a>
+    <nav class="nav__links" aria-label="Primary navigation">
+      <a href="#how-it-works">How It Works</a><a href="./mainnet-app/">Pools</a><a href="./transparency/">Protocol</a><a href="./whitepaper/">Whitepaper</a><a href="./docs/">Docs</a>
+    </nav>
+    <div class="nav__actions"><span class="site-contract" title="No official token contract has been announced">Token contract pending</span><a class="network" href="./mainnet-app/">Connect Wallet</a><a class="pill pill--light" href="./mainnet-app/">Enter App <span>↗</span></a></div>
+  </header>
+  <div class="home-announcements">
+  <div class="purchase-ribbon" aria-label="Recent confirmed ticket purchases"><span class="purchase-ribbon__label">LIVE ENTRIES</span><div class="purchase-ribbon__viewport" id="purchaseRibbon" aria-live="off"><span>Loading confirmed mainnet entries…</span></div></div></div>
+
+  <main>
+    <section class="hero" id="home">
+      <video class="hero__video" src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260217_030345_246c0224-10a4-422c-b324-070b7c0eceda.mp4" autoplay muted loop playsinline></video>
+      <div class="hero__veil"></div><div class="hero__orbit orbit-one"></div><div class="hero__orbit orbit-two"></div>
+      <div class="hero__content shell">
+        <div class="eyebrow"><i></i> ONCHAIN PRIZE POOLS ON BNB CHAIN</div>
+        <h1>BNB POOLS<br>FIXED RULES<br><span>PUBLIC RESULTS</span></h1>
+        <p>Native BNB powers every pool. The prize ticket price capacity and time limit are set before entry. Each confirmed ticket belongs to its purchasing wallet. Full pools use Chainlink VRF to select a winning ticket while unfilled expired pools let buyers claim their contributions.</p>
+        <div class="hero__actions"><a class="pill pill--light" href="./mainnet-app/">Enter App <span>↗</span></a><a class="pill" href="#how-it-works">How it works <span aria-hidden="true">↓</span></a></div>
+        <div class="hero__proof"><span>FIXED POOL TERMS</span><span>ONE VERIFIED DRAW</span><span>BUYER-CLAIMED REFUNDS</span></div>
+      </div>
+      <div class="scroll">SCROLL TO CONVERGE <span>↓</span></div>
+    </section>
+
+    <section class="section intro" id="protocol">
+      <div class="shell split-heading"><div><div class="kicker">WHAT IS SINGULAR</div><h2>A simpler way<br><em>to join an onchain draw</em></h2></div><p>SINGULAR turns prize draws into fixed rule smart contract pools The prize ticket price capacity and deadline are published before you buy Ticket ownership and the outcome are recorded onchain</p></div>
+      <div class="shell rule-grid">
+        <article><b>01</b><span>A FIXED PRIZE</span><strong>0.1 BNB</strong><p>Every pool publishes its prize before it opens.</p></article>
+        <article><b>02</b><span>A FIXED TICKET PRICE</span><strong>0.01 BNB</strong><p>One ticket always costs the same for everyone in that pool.</p></article>
+        <article><b>03</b><span>A FIXED NUMBER OF TICKETS</span><strong>11 TICKETS</strong><p>Pool size is capped, so odds are knowable upfront.</p></article>
+        <article><b>04</b><span>A FIXED TIME LIMIT</span><strong>10 MIN</strong><p>The countdown starts with the first confirmed ticket.</p></article>
+      </div>
+      <div class="shell odds-story"><div><div class="kicker">TICKETS &amp; ODDS</div><h3><span>0.01 BNB</span> = 1 ticket</h3><p>The ticket price is identical for every participant. A wallet may buy several tickets; a larger share of the fixed pool means higher odds, not a guaranteed win.</p></div><div class="odds-story__bars"><div class="kicker">EXAMPLE / 11-TICKET POOL</div><div><span>1 ticket</span><i style="--odds:9.09%"></i><b>9.09%</b></div><div><span>3 tickets</span><i style="--odds:27.27%"></i><b>27.27%</b></div><div><span>7 tickets</span><i style="--odds:63.64%"></i><b>63.64%</b></div><small>Odds follow tickets held ÷ total tickets, not purchase order.</small></div></div>
+    </section>
+
+    <section class="section convergence" id="mechanics">
+      <div class="shell"><div class="kicker">THE DRAW END TO END</div><h2>Every ticket counts<br><em>One ticket wins</em></h2>
+        <div class="flow" aria-label="Pool lifecycle"><span>FIRST ENTRY</span><i>→</i><span>TIMER STARTS</span><i>→</i><span>MORE ENTRIES</span><i>→</i><span>POOL FILLS</span><i>→</i><strong>ONE WINNER</strong></div>
+        <div class="draw-sequence" id="drawSequence" aria-label="Automatically playing illustrative draw"><div class="draw-sequence__terms"><div><small>PRIZE</small><b>0.1 BNB</b></div><div><small>PER TICKET</small><b>0.01 BNB</b></div><div><small>CAPACITY</small><b>11 tickets</b></div><div><small>TIME LIMIT</small><b>10 min</b></div></div><div class="draw-sequence__body"><div class="draw-sequence__state"><span class="draw-sequence__pulse" aria-hidden="true"></span><strong id="drawSequenceStatus">POOL LIVE</strong><span id="drawSequenceCount">01 / 11 TICKETS</span></div><div class="draw-sequence__progress"><i id="drawSequenceProgress"></i></div><div class="draw-sequence__tickets" id="drawSequenceTickets" aria-hidden="true"></div><p id="drawSequenceNote">The first confirmed ticket starts the countdown.</p></div></div>
+        <p class="caption">Illustrative 0.1 BNB prize pool: 0.01 BNB per ticket × 11 tickets = 0.1 BNB prize + 0.01 BNB protocol fee. The fee accrues only after a completed draw.</p>
+      </div>
+    </section>
+
+    <section class="section refund-demo" id="refund-example"><div class="shell refund-demo__layout"><div><div class="kicker">REFUND PROTECTION</div><h2>Not filled?<br><em>Your contribution stays claimable.</em></h2><p>A pool draws only when every ticket sells. If the countdown reaches zero with tickets unsold, there is no winner and no protocol fee. Each buyer can claim back the full BNB they contributed.</p><ul><li>No winner is selected</li><li>No protocol fee is collected</li><li>Each purchasing wallet claims its own BNB</li></ul><small>Refund claims require a wallet transaction and network gas. A full pool with no VRF result after six hours also becomes refundable.</small></div><div class="refund-demo__panel" aria-label="Illustrative refund scenario"><header><span id="refundDemoStatus">LIVE POOL</span><span>NO FEE COLLECTED</span></header><div class="refund-demo__totals"><div><strong id="refundDemoSold">3 / 11</strong><small>TICKETS SOLD</small></div><div><strong id="refundDemoTime">06:20</strong><small>TIME REMAINING</small></div></div><div class="refund-demo__bar"><i id="refundDemoBar"></i></div><div class="refund-demo__foot"><span id="refundDemoRemaining">8 tickets unsold</span><b id="refundDemoClaim">DRAW NOT EXECUTED</b></div><div class="refund-demo__buyers"><div><span>Buyer A · 3 tickets</span><b>0.03 BNB</b></div><div><span>Buyer B · 2 tickets</span><b>0.02 BNB</b></div><div><span>Buyer C · 2 tickets</span><b>0.02 BNB</b></div></div><p id="refundDemoNote">Contributions remain recorded while the pool is live.</p></div></div></section>
+
+    <section class="section join-steps" id="how-it-works"><div class="shell join-steps__layout"><div><div class="kicker">HOW IT WORKS</div><h2>From wallet<br><em>to draw.</em></h2><p>Five steps, no hidden pool terms. Read the price, prize, capacity and timer before buying.</p></div><div class="join-steps__list"><article><span>01</span><div><h3>Connect Wallet</h3><p>Connect a compatible wallet to BNB Chain.</p></div></article><article><span>02</span><div><h3>Choose a Pool</h3><p>Review its published prize, ticket price, size and time limit.</p></div></article><article><span>03</span><div><h3>Buy Tickets</h3><p>Pay the exact BNB ticket price. Every ticket has equal weight.</p></div></article><article><span>04</span><div><h3>Pool Fills or Expires</h3><p>When full, sales close and the VRF draw starts. If unfilled at expiry, refunds become claimable.</p></div></article><article><span>05</span><div><h3>Winner Selected</h3><p>One recorded ticket is selected; the winning wallet claims the prize.</p></div></article></div></div></section>
+
+    <section class="section proof-teaser" aria-labelledby="proof-teaser-title"><div class="shell proof-teaser__layout"><div><div class="kicker">TRANSPARENT BY DESIGN</div><h2 id="proof-teaser-title">Trust the record.<br><em>Verify the rules.</em></h2><p>Pool terms, ticket ownership and the final outcome can be checked against the BNB Chain contract. The website explains the process; the contract determines the result.</p><a class="section-action" href="./transparency/">Explore protocol transparency <span aria-hidden="true">↗</span></a></div><div class="proof-teaser__facts"><div><span>01 / TERMS</span><strong>Fixed before entry</strong><p>Prize, price, capacity, duration and fee are set per pool.</p></div><div><span>02 / TICKETS</span><strong>Recorded onchain</strong><p>Each ticket is assigned to its purchasing wallet.</p></div><div><span>03 / RANDOMNESS</span><strong>Chainlink VRF</strong><p>A fulfilled request selects a ticket from a full pool.</p></div><div><span>04 / SETTLEMENT</span><strong>Claimable by wallet</strong><p>The winner claims the prize; eligible buyers claim refunds.</p></div></div></div></section>
+
+    <section class="section protocol-live" id="live"><div class="shell"><div class="split-heading"><div><div class="kicker">MAINNET / LIVE RECORD</div><h2>Current state.<br><em>Public evidence.</em></h2></div><p>These figures are read from the Pool Manager on BNB Chain. Open the application to inspect individual tickets, transactions, claims and refunds.</p></div><div class="live-metrics"><div><span>OPEN POOLS</span><b id="liveOpen">—</b></div><div><span>TOTAL ENTRIES</span><b id="liveEntries">—</b></div><div><span>BNB ENTERED</span><b id="liveEntered">—</b></div><div><span>POOLS RESOLVED</span><b id="liveResolved">—</b></div><div><span>PRIZES CLAIMED</span><b id="livePaid">—</b></div></div><div class="live-preview"><article><header><span>01 / POOL STATUS</span><small>LIVE CONTRACT READ</small></header><div class="home-live-feed" id="liveActivity"><span class="live-feed__index">01</span><b>Loading pool state…</b><p>Reading the mainnet contract.</p></div></article><article><header><span>02 / RECENT WINNERS</span><small>SETTLED ONCHAIN</small></header><div class="home-live-feed winner-list" id="liveOutcome"><p>Loading draw records…</p></div></article></div></div></section>
+
+    <section class="section final-cta"><div class="shell"><div class="kicker">FIXED RULES PUBLIC RESULTS</div><h2>Enter the protocol.</h2><p>Explore current pools or review the contract's rules and permissions.</p><div><a class="pill pill--light" href="./mainnet-app/">Enter App <span>↗</span></a><a class="pill" href="./transparency/">Protocol details</a></div></div></section>
+  </main>
+
+  <footer><div class="shell footer footer--expanded"><div class="footer__brand"><a class="brand" href="#home"><img src="./assets/singular-logo.png" alt="SINGULAR" /></a><p>Fixed-rule BNB prize pools. One verified outcome per completed pool.</p></div><div class="footer__group"><b>EXPLORE</b><a href="./mainnet-app/">Enter App</a><a href="./whitepaper/">Whitepaper</a><a href="./transparency/">Protocol &amp; transparency</a><a href="./docs/">Documentation</a><a href="https://bscscan.com/address/0xe7cbe024811788ed6158c10d3399ab8738ef421d" target="_blank" rel="noopener noreferrer">Pool Manager on BscScan ↗</a></div><div class="footer__group"><b>OFFICIAL CHANNELS</b><span>Official X · Pending announcement</span><span>Git repository · Pending publication</span><b>ECOSYSTEM RESOURCES</b><a href="https://docs.bnbchain.org/bnb-smart-chain/" target="_blank" rel="noopener noreferrer">BNB Chain docs ↗</a><a href="https://docs.chain.link/vrf" target="_blank" rel="noopener noreferrer">Chainlink VRF docs ↗</a><a href="https://bscscan.com/" target="_blank" rel="noopener noreferrer">BscScan ↗</a></div><div class="footer__bottom"><span>© 2026 SINGULAR · BNB CHAIN MAINNET</span><span>Explore the protocol and verify the onchain record.</span></div></div></footer>
+
+  <script src="./app/runtime-env-mainnet.js"></script>
+  <script src="./app/testnet-config.js"></script>
+  <script src="./app.js"></script>
+  <script src="./experience.js?v=20261005-refund-motion"></script>
+  <script src="./app/home-copy.js"></script>
+</body>
+</html>

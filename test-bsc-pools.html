@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SINGULAR · BSC 测试网实测</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui,sans-serif; background:#050b14; color:#e9f2ff }
+    body { max-width:850px; margin:auto; padding:38px 20px 80px }
+    h1 { margin:6px 0; font-size:clamp(26px,4vw,42px) }
+    h2 { margin:0 0 12px }
+    p,li { color:#afc1d5; line-height:1.55 }
+    .eyebrow { color:#66c8ff; font-size:11px; letter-spacing:.18em; font-weight:800 }
+    .panel { background:#0c1625; border:1px solid #22354d; border-radius:14px; padding:20px; margin:16px 0 }
+    .warning { border-color:#725b23; background:#211b0e }
+    .row { display:flex; flex-wrap:wrap; align-items:center; gap:10px }
+    button { background:#bceeff; color:#06101c; border:0; border-radius:8px; padding:11px 15px; font-weight:800; cursor:pointer }
+    button:disabled { opacity:.4; cursor:not-allowed }
+    input { background:#07101c; color:#e9f2ff; border:1px solid #344e6c; border-radius:6px; padding:8px; width:80px }
+    code,pre { font-family:ui-monospace,Consolas,monospace; overflow-wrap:anywhere }
+    .value { color:#bceeff; font-size:13px }
+    pre { white-space:pre-wrap; max-height:320px; overflow:auto; font-size:12px }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">SINGULAR / BSC TESTNET ONLY</div>
+  <h1>小额奖池端到端实测</h1>
+  <p><strong>本轮官网测试：</strong>这里只需用管理员钱包创建一个新开奖池。创建成功后复制新 Pool ID，前往 <a href="./app/">Enter App</a> 购票与领奖；无需在此页面重测旧购票流程。</p>
+  <p>合约固定在 BNB Chain Testnet。此页面只调用已部署的测试网合约，每笔写入都由 MetaMask 单独确认。不要使用真实资产或主网钱包余额。</p>
+  <div class="panel warning"><strong>测试金额与顺序</strong>
+    <p>每张票 0.001 tBNB。官网测试开奖池：2 张容量、奖金 0.0018 tBNB、协议费 0.0002 tBNB、30 分钟；可在 Enter App 用同一测试钱包买满 2 张。退款池为另一项可选测试，本轮无需创建。创建奖池本身不扣购票本金。</p>
+    <p>请先确保两个钱包各有购票金额和 gas。不要连续点击或在交易未确认时重试。VRF 回调并非即时，若等待较久先查看链上记录。</p>
+  </div>
+  <div class="panel"><h2>1 · 连接钱包</h2>
+    <div class="row"><button id="connect">连接 / 刷新钱包</button><span id="wallet" class="value">未连接</span></div>
+    <p>Manager：<code>0x6912609208BE953FD6B9d0176841F3A64746Ce82</code></p>
+  </div>
+  <div class="panel"><h2>2 · 完整开奖测试</h2>
+    <div class="row"><button id="createDraw" disabled>管理员新建开奖池</button><label>Pool ID <input id="drawId" inputmode="numeric" placeholder="待创建"></label><button id="refreshDraw" disabled>刷新状态</button></div>
+    <p>旧 Pool ID 可继续查询；点击“新建”会创建另一轮测试池，并在交易确认后把输入框更新为新 ID。请勿在交易待确认时重复点击。</p>
+    <p id="drawStatus" class="value">尚未创建。</p>
+    <div class="row"><button id="buyDraw" disabled>当前钱包买 1 张（0.001 tBNB）</button><button id="claimDraw" disabled>中奖钱包领取奖金</button></div>
+    <p>本轮只在这里创建奖池。创建后可在 Enter App 用同一测试钱包购买 2 张（共 0.002 tBNB），满池后等待 VRF，再从 Enter App 领取；无需切换第二个钱包。</p>
+  </div>
+  <div class="panel"><h2>3 · 到期退款测试</h2>
+    <div class="row"><button id="createRefund" disabled>管理员创建退款池</button><label>Pool ID <input id="refundId" inputmode="numeric" placeholder="待创建"></label><button id="refreshRefund" disabled>刷新状态</button></div>
+    <p id="refundStatus" class="value">尚未创建。</p>
+    <div class="row"><button id="buyRefund" disabled>当前钱包买 1 张（0.001 tBNB）</button><button id="claimRefund" disabled>原购买钱包领取退款</button></div>
+    <p>只买 1 张，不要把退款池买满。第一张票确认后开始两分钟计时；到期后用原购买钱包领取。</p>
+  </div>
+  <div class="panel"><h2>4 · 协议费隔离测试</h2>
+    <p>Pool #1 完成后，仅其 0.0002 tBNB 协议费可从 Manager 划入 Fee Vault；只有固定接收钱包能从费用库领取。奖金和退款已在前两步结算，不能作为协议费领取。</p>
+    <div class="row"><button id="refreshFee" disabled>读取费用状态</button><button id="sweepFee" disabled>划入 Fee Vault</button><button id="withdrawFee" disabled>固定接收钱包领取费用</button></div>
+    <p id="feeStatus" class="value">尚未读取。</p>
+  </div>
+  <div class="panel"><h2>执行记录</h2><pre id="log">尚未开始。</pre></div>
+  <script type="module" src="./scripts/test-bsc-pools-browser.mjs"></script>
+</body>
+</html>

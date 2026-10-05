@@ -1,0 +1,1 @@
+{"name":"singular-site","private":true,"scripts":{"test":"node --test tests/*.test.js","build":"node scripts/build-public.mjs","config:testnet":"node scripts/build-testnet-config.mjs"}}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SINGULAR · BNB 主网部署控制台</title>
+  <style>
+    :root{color-scheme:dark;font-family:Arial,"Microsoft YaHei",sans-serif;background:#030811;color:#edf7ff}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse 70% 40% at 80% 0%,#0b2036 0%,transparent 65%);min-height:100vh}
+    .shell{max-width:920px;margin:auto;padding:48px 22px 90px}.eyebrow{color:#78d4ff;font-size:11px;font-weight:700;letter-spacing:.18em}
+    h1{font-size:clamp(30px,4vw,48px);letter-spacing:-.05em;margin:12px 0 14px;font-weight:550}h2{font-size:19px;font-weight:550;margin:0 0 18px}
+    p,li{line-height:1.65;color:#9bb0c4}.lead{max-width:710px;margin:0 0 28px}.panel{border:1px solid #20344a;background:#091523;border-radius:16px;padding:26px;margin:18px 0}
+    .warning{border-color:#775c26;background:#1d190f}.warning strong{color:#f8d895}.warning p{margin-bottom:0}
+    .facts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.fact{padding:14px;background:#050e19;border:1px solid #1c3045;border-radius:10px;min-width:0}
+    .fact small{display:block;color:#6e91ad;letter-spacing:.12em;font-size:10px;margin-bottom:8px}.fact code{font-size:12px;overflow-wrap:anywhere;color:#d6edff}
+    .row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}button{background:#d6f3ff;color:#07131e;border:0;border-radius:8px;font-weight:700;padding:12px 17px;cursor:pointer}
+    button:disabled{background:#597283;cursor:not-allowed}button:hover:not(:disabled){background:white}.value{font-size:12px;color:#a9dfff;overflow-wrap:anywhere}
+    label{display:flex;gap:9px;align-items:flex-start;line-height:1.5;color:#d4e5f1;font-size:13px}input{accent-color:#78d4ff;margin-top:3px}
+    ol{padding-left:28px}li{padding:10px 0;border-bottom:1px solid #1a2a3a}li:last-child{border-bottom:0}li .value{margin-left:10px}
+    #log{font-family:Consolas,monospace;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:300px;overflow:auto;color:#a9c9df}
+    .foot{font-size:12px;color:#708ba5;margin-top:30px}@media(max-width:650px){.facts{grid-template-columns:1fr}.panel{padding:20px}li .value{display:block;margin:9px 0 0}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="eyebrow">SINGULAR / DEPLOYMENT CONTROL</div>
+    <h1>BNB 主网部署</h1>
+    <p class="lead">只在本地打开的部署控制台。合约字节码来自本地编译产物；每笔交易都必须由已确认的钱包在 MetaMask 中逐笔签署。本页不会读取私钥或助记词。</p>
+    <section class="panel warning"><strong>真实资金操作 · 尚未上线</strong><p>这不是测试网。部署合约会消耗真实 BNB；部署完成也不会自动开放官网或创建奖池。先核对订阅和所有链上地址，部署后把 VRF Provider 加为订阅 Consumer，再完成主网只读检查和小额端到端验证。若交易状态不明，请先在 BscScan 核对，不要盲目重试。</p></section>
+    <section class="panel"><div class="eyebrow">01 / PREFLIGHT</div><h2>网络与订阅校验</h2>
+      <div class="facts"><div class="fact"><small>CHAIN</small><code>BNB Chain Mainnet · ID 56</code></div><div class="fact"><small>DEPLOYER / FEE RECIPIENT</small><code id="expected"></code></div><div class="fact"><small>VRF V2.5 SUBSCRIPTION</small><code id="subscription"></code></div><div class="fact"><small>VRF BILLING</small><code>Native BNB · 200 gwei lane</code></div></div>
+      <div class="row"><button id="connect">连接 MetaMask 并核对链上状态</button><span id="wallet" class="value">未核对</span></div>
+    </section>
+    <section class="panel"><div class="eyebrow">02 / DEPLOYMENT</div><h2>逐笔部署与绑定</h2>
+      <label><input id="ack" type="checkbox">我确认当前是 BNB 主网、将花费真实 BNB，并已核对钱包、订阅 ID 与下面的合约参数。</label>
+      <ol><li><button id="provider" disabled>部署 VRF Provider</button><span id="providerAddress" class="value"></span></li>
+        <li><button id="manager" disabled>部署 Pool Manager + Fee Vault</button><span id="managerAddress" class="value"></span></li>
+        <li><button id="bind" disabled>绑定 Provider → Manager</button><span id="bound" class="value"></span></li></ol>
+      <p>这里只部署合约，不创建奖池、不转移用户资金。新合约规则：成功开奖才自动续池；未满到期或 VRF 请求后 6 小时无结果只开放退款，不续池。部署后仍须在 Chainlink 订阅中添加新 Provider 为 Consumer。现有官网继续指向旧主网合约，直到新合约完成验证及旧池退款入口保留后才切换。</p>
+    </section>
+    <section class="panel"><div class="eyebrow">03 / RECORD</div><h2>执行记录</h2><pre id="log">尚未开始。</pre></section>
+    <p class="foot">固定配置：Coordinator 0xd691f04bc0C9a24Edb78af9E005Cf85768F694C9 · 3 confirmations · 500,000 callback gas。部署前以 Chainlink 官方文档再次核对。</p>
+  </main>
+  <script>
+    window.__SINGULAR_DEPLOY_CONFIG__ = Object.freeze({
+      chainId:'0x38', account:'0xa3ff9722b93580d95aae0d9fce09bd1957b916a5',
+      coordinator:'0xd691f04bc0C9a24Edb78af9E005Cf85768F694C9',
+      keyHash:'0x130dba50ad435d4ecc214aad0d5820474137bd68e7e77724144f27c3c377d3d4',
+      subscriptionId:'69950175215913706087256987184682290497316186217230956864948872496659990396211',
+      confirmations:3, callbackGasLimit:500000, nativePayment:true
+    });
+  </script>
+  <script type="module" src="./scripts/deploy-bsc-testnet-browser.mjs"></script>
+</body>
+</html>

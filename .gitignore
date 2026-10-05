@@ -1,0 +1,20 @@
+# Never commit signing material or local environment values.
+.env
+.env.*
+!.env.testnet.example
+!contracts/.env.example
+*.key
+*.keystore
+*mnemonic*
+*.pem
+*.p12
+*.log
+.vercel/
+.DS_Store
+
+# Generated Foundry and frontend artifacts.
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+node_modules/
+dist/

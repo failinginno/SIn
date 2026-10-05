@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SINGULAR · BSC 测试网部署</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #050b14; color: #e9f2ff; }
+    body { max-width: 850px; margin: 0 auto; padding: 42px 20px 90px; }
+    h1 { font-size: clamp(26px, 4vw, 42px); margin: 8px 0; }
+    p, li { color: #a6b7cc; line-height: 1.65; }
+    .eyebrow { color: #65c8ff; letter-spacing: .18em; font-size: 11px; font-weight: 800; }
+    .panel { background: #0c1625; border: 1px solid #22354d; border-radius: 15px; padding: 20px; margin: 18px 0; }
+    .warning { border-color: #755f22; background: #211b0e; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    button { background: #bceeff; border: 0; border-radius: 8px; color: #06101c; font-weight: 800; padding: 12px 16px; cursor: pointer; }
+    button:disabled { opacity: .42; cursor: not-allowed; }
+    code, output, pre { font-family: ui-monospace, Consolas, monospace; overflow-wrap: anywhere; }
+    .value { color: #dff5ff; font-size: 13px; }
+    label { display: block; padding: 7px 0; }
+    input[type=checkbox] { accent-color: #65c8ff; }
+    #log { white-space: pre-wrap; font-size: 12px; color: #b6d0e9; max-height: 320px; overflow: auto; }
+    .success { color: #68d7a7; }
+    .error { color: #ff9b9b; }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">SINGULAR / TESTNET ONLY</div>
+  <h1>使用 MetaMask 部署测试网合约</h1>
+  <p>仅限 BNB Chain Testnet（链 ID 97）。该页面读取本地编译产物并请求 MetaMask 签名；不会要求或读取私钥、助记词或密码。所有交易由你在钱包中逐笔确认。</p>
+  <div class="panel warning">
+    <strong>部署前注意</strong>
+    <p>这是未经独立审计的测试版本，不能用于主网或真实资金。当前 VRF 订阅有 0.05 tBNB。部署后仍须把随机数合约地址加入订阅的 consumer，才能测试开奖。若交易中断，不要盲目重试：先记录已生成的合约地址。</p>
+  </div>
+  <div class="panel">
+    <h2>1 · 连接与核对</h2>
+    <p>预期钱包：<code id="expected"></code><br>VRF 订阅：<code id="subscription"></code></p>
+    <div class="row"><button id="connect">连接 MetaMask 并检查</button><span id="wallet" class="value">未连接</span></div>
+  </div>
+  <div class="panel">
+    <h2>2 · 逐笔部署</h2>
+    <label><input id="ack" type="checkbox"> 我确认当前为测试网，已核对钱包地址，并理解这是未审计的测试部署。</label>
+    <ol>
+      <li><button id="provider" disabled>部署 VRF Provider</button> <span id="providerAddress" class="value"></span></li>
+      <li><button id="manager" disabled>部署 Pool Manager + Fee Vault</button> <span id="managerAddress" class="value"></span></li>
+      <li><button id="bind" disabled>绑定 Provider → Manager</button> <span id="bound" class="value"></span></li>
+    </ol>
+    <p>这些步骤只创建合约，不创建奖池，也不从钱包提取协议费。</p>
+  </div>
+  <div class="panel">
+    <h2>执行记录</h2>
+    <pre id="log">尚未开始。</pre>
+  </div>
+  <script type="module" src="./scripts/deploy-bsc-testnet-browser.mjs"></script>
+</body>
+</html>

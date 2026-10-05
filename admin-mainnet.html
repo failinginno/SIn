@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+  <title>SINGULAR · 主网管理员控制台</title>
+  <link rel="stylesheet" href="app/admin-testnet.css">
+</head>
+<body><main>
+  <header><img src="assets/singular-logo.png" alt="SINGULAR"><span>ADMIN CONSOLE · BSC MAINNET</span></header>
+  <h1>奖池与协议费用</h1>
+  <p class="intro">仅固定管理员钱包可在链上执行操作；每笔主网交易都必须在钱包中独立确认。本页不在官网导航中公开，也不会读取私钥。网址本身不是访问控制，合约权限才是最终保障。</p>
+  <div class="warn">BNB 主网固定合约：0xe7cbe024811788ed6158c10d3399ab8738ef421d。成功开奖后自动续建；未满到期或 VRF 请求超过 6 小时后可由购票钱包领取退款，退款池不会自动续建。参数上链后不可修改。</div>
+  <section><h2>01 / 钱包核验</h2><button id="connect">连接 MetaMask</button><p id="identity">未连接</p></section>
+  <div id="controls" hidden>
+    <section><h2>02 / 创建固定参数奖池</h2><p>选择一档预设后逐池核对并在钱包签名。页面不会自动发起交易。</p><div class="tier-presets" aria-label="奖池参数预设"><button type="button" data-tier="0">0.05 BNB · 10 分钟</button><button type="button" data-tier="1">0.1 BNB · 10 分钟</button><button type="button" data-tier="2">0.5 BNB · 20 分钟</button><button type="button" data-tier="3">1 BNB · 30 分钟</button></div><div class="grid">
+      <label>单张票价 (BNB)<input id="price" value="0.01" inputmode="decimal"></label>
+      <label>容量（张）<input id="capacity" value="6" inputmode="numeric"></label>
+      <label>奖金 (BNB)<input id="prize" value="0.05" inputmode="decimal"></label>
+      <label>协议费 (BNB)<input id="fee" value="0.01" inputmode="decimal"></label>
+      <label>首张票后时长（分钟）<input id="duration" value="10" inputmode="numeric"></label>
+    </div><p>票价 × 容量必须恰好等于奖金 + 协议费；链上参数提交后不可更改。</p><button id="create">核对并创建主网奖池</button></section>
+    <section><h2>03 / 协议费</h2><div class="grid"><label>已开奖奖池 ID<input id="poolId" inputmode="numeric" placeholder="例如 1"></label><div><button id="readFee">读取费用状态</button></div></div><p id="feeState">先读取奖池费用。</p><button id="sweep" disabled>划转该池协议费至 Fee Vault</button><button id="withdraw" disabled>领取 Fee Vault 全部可用协议费</button><p>未开奖、未结算的用户奖金和退款不能作为协议费提取。</p></section>
+  </div>
+  <section><h2>执行记录</h2><pre id="log" aria-live="polite">尚未操作。</pre></section>
+</main>
+<script src="app/runtime-env-mainnet.js"></script><script src="app/testnet-config.js"></script><script src="app/admin-testnet.js"></script>
+</body></html>

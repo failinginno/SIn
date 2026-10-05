@@ -186,6 +186,20 @@ test('focused pool refresh publishes a changed ticket count without full history
   assert.equal(scans, 1);
 });
 
+test('pending draw poll publishes a confirmed result without waiting for event logs', async () => {
+  const p = new O.OnchainSingularProvider(config, null, null);
+  p.hasLoadedPools = true;
+  p.pools = [{ id: 1, contractStatus: 2, winner: address, entriesSold: 2, participants: [], activity: [] }];
+  p.readPool = async () => ({ id: 1, contractStatus: 3, winner: address, entriesSold: 2, participants: [], activity: [] });
+  let emissions = 0;
+  p.subscribe(() => emissions++);
+  await p.refreshPendingOutcomes();
+  assert.equal(p.getPool(1).contractStatus, 3);
+  assert.equal(emissions, 1);
+  await p.refreshPendingOutcomes();
+  assert.equal(emissions, 1);
+});
+
 test('ticket-owner ledger reconstructs buyer counts when event RPC is unavailable', async () => {
   const p = new O.OnchainSingularProvider(config, null, null);
   p.pools = [{ id: 1, entriesSold: 3, entryPrice: 0.01, participants: [], activity: [] }];

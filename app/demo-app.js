@@ -97,22 +97,32 @@
     }
   }
   function outcomeNotice(){
-    document.getElementById('outcomeNotice')?.remove();
     if(!onchain||!ready)return;
     const all=provider.getPools(),states=new Map(all.map(p=>[p.id,p.contractStatus]));
     if(observedPoolStates){for(const p of all){const previous=observedPoolStates.get(p.id);if(previous!=null&&previous!==3&&p.contractStatus===3)latestSettlement=p.id}}
     observedPoolStates=states;
     const wallet=provider.getWallet(),address=wallet.address;
+    const owner=wallet.connected?address.toLowerCase():'public';
+    let active=document.getElementById('outcomeNotice');
+    if(active&&active.dataset.owner!==owner){active.remove();active=null}
     let dismissed={};try{dismissed=JSON.parse(localStorage.getItem('singular:outcome-notices:v1')||'{}')}catch{}
-    const personal=wallet.connected?all.filter(p=>p.myEntries>0&&([2,3].includes(p.contractStatus)||(p.contractStatus===4&&p.refundableWei>0n&&!p.refundClaimed))).sort((a,b)=>(b.contractStatus===4)-(a.contractStatus===4)||(b.contractStatus===3)-(a.contractStatus===3)||b.id-a.id):[];
-    const personalPool=personal.find(pool=>!dismissed[`${config.poolManagerAddress}:${address.toLowerCase()}:${pool.id}:${pool.contractStatus}`]&&!(pool.contractStatus===3&&pool.prizeClaimed&&pool.winner.toLowerCase()===address.toLowerCase()));
-    const publicPool=latestSettlement?all.find(pool=>pool.id===latestSettlement&&!dismissed[`${config.poolManagerAddress}:public:${pool.id}:3`]):null;
-    const p=personalPool||publicPool;
+    const settled=latestSettlement?all.find(pool=>pool.id===latestSettlement&&pool.contractStatus===3):null;
+    latestSettlement=null;
+    const refunds=wallet.connected?all.filter(pool=>pool.contractStatus===4&&pool.refundableWei>0n&&!pool.refundClaimed&&!dismissed[`${config.poolManagerAddress}:${owner}:${pool.id}:4`]).sort((a,b)=>b.id-a.id):[];
+    const p=settled||refunds[0];
     if(!p)return;
-    const owned=!!personalPool&&p.id===personalPool.id,won=wallet.connected&&owned&&p.contractStatus===3&&p.winner.toLowerCase()===address.toLowerCase();
-    const kind=p.contractStatus===4?'REFUND':p.contractStatus===2?'DRAWING':won?'WON':owned?'LOST':'COMPLETE';
-    const key=owned?`${config.poolManagerAddress}:${address.toLowerCase()}:${p.id}:${p.contractStatus}`:`${config.poolManagerAddress}:public:${p.id}:3`;
+    const owned=wallet.connected&&p.myEntries>0,won=owned&&p.contractStatus===3&&p.winner.toLowerCase()===owner;
+    const kind=p.contractStatus===4?'REFUND':won?'WON':owned?'LOST':'COMPLETE';
+    const key=owned?`${config.poolManagerAddress}:${owner}:${p.id}:${p.contractStatus}`:`${config.poolManagerAddress}:public:${p.id}:3`;
+    if(dismissed[key]||active?.dataset.noticeKey===key)return;
+    active?.remove();
+    // Remember a notification when it first appears, not only when it is closed.
+    // Re-rendering or revisiting another page must not announce the same draw again.
+    dismissed[key]=true;
+    if(kind==='REFUND')for(const pool of refunds)dismissed[`${config.poolManagerAddress}:${owner}:${pool.id}:4`]=true;
+    try{localStorage.setItem('singular:outcome-notices:v1',JSON.stringify(dismissed))}catch{}
     const notice=document.createElement('div');notice.id='outcomeNotice';notice.className=`outcome-notice outcome-notice--${kind.toLowerCase()} ${kind==='DRAWING'?'is-pending':''}`;
+    notice.dataset.noticeKey=key;notice.dataset.owner=owner;
     notice.setAttribute('role',kind==='DRAWING'?'status':'alert');notice.setAttribute('aria-live','polite');
     notice.innerHTML=`<div class="outcome-notice__card"><div class="outcome-notice__beacon" aria-hidden="true"><span>${kind==='REFUND'?'↶':'✦'}</span></div><div class="outcome-notice__content"><div class="outcome-notice__meta"><span class="eyebrow">${kind==='REFUND'?'REFUND AVAILABLE':kind==='DRAWING'?'DRAW IN PROGRESS':won?'WINNING WALLET':owned?'YOUR DRAW RESULT':'DRAW COMPLETE'}</span><span>POOL #${String(p.id).padStart(2,'0')}</span></div><button class="outcome-notice__close" data-dismiss-notice="${esc(key)}" aria-label="Dismiss notification">×</button><h2>${kind==='REFUND'?'Your refund is ready.':kind==='DRAWING'?'The draw is underway.':won?'Your ticket won.':owned?'The draw is complete.':'A new result is in.'}</h2><p>${kind==='REFUND'?`Pool #${p.id} expired before filling. ${money(Number(window.SingularOnchain.formatBNB(p.refundableWei)))} is available to the connected purchasing wallet. Claiming requires your wallet confirmation and network gas.`:kind==='DRAWING'?'All entries are confirmed. Chainlink VRF is returning the onchain result.':won?`Ticket #${p.winningTicket} won ${money(p.prize)}. Claim directly with the winning wallet.`:owned?`Your tickets were not selected. Winning ticket #${p.winningTicket} is recorded onchain.`:`Pool #${p.id} has settled. Winning ticket #${p.winningTicket} is recorded onchain.`}</p><div class="outcome-notice__actions">${kind==='REFUND'?`<button class="outcome-notice__primary" data-refund="${p.id}">Claim ${money(Number(window.SingularOnchain.formatBNB(p.refundableWei)))} <span aria-hidden="true">→</span></button>`:won&&!p.prizeClaimed&&p.claimableWei>0n?`<button class="outcome-notice__primary" data-claim="${p.id}">Claim ${money(p.prize)} <span aria-hidden="true">→</span></button>`:''}<a class="outcome-notice__secondary" href="${kind==='REFUND'?'refunds.html':`result.html?id=${p.id}`}">${kind==='REFUND'?'View refunds':'View onchain result'} <span aria-hidden="true">↗</span></a></div></div></div>`;
     if(kind==='REFUND'&&p.entriesSold===p.capacity)notice.querySelector('.outcome-notice__content p').textContent=`Pool #${p.id} received no VRF result within 6 hours. ${money(Number(window.SingularOnchain.formatBNB(p.refundableWei)))} is refundable to this purchasing wallet. Claiming requires wallet confirmation and network gas.`;
@@ -190,9 +200,9 @@
     if(t.dataset.walletId){const choice=walletChoices.get(t.dataset.walletId);if(!choice||walletBusy)return;walletBusy=true;t.disabled=true;const error=document.getElementById('walletConnectError');if(error)error.textContent='';try{await provider.connectWallet(choice.wallet);activeWalletName=choice.name;walletDialogOpen=false;walletMenuOpen=false;localStorage.removeItem(`singular:wallet-disconnected:${config.chainId}`);localStorage.setItem(`singular:selected-wallet:${config.chainId}`,t.dataset.walletId);localStorage.setItem(`singular:selected-wallet-name:${config.chainId}`,choice.name);render()}catch(err){if(error)error.textContent=err.message;t.disabled=false}finally{walletBusy=false}return}
     if(t.dataset.filter){filter=t.dataset.filter;render();return}
     if(t.dataset.qty){qty=Number(t.dataset.qty);render();return}
-    if(t.dataset.refund){t.disabled=true;t.textContent='Confirm refund in wallet…';try{if(onchain)await provider.claimRefund(t.dataset.refund);else provider.claimRefund(t.dataset.refund);if(onchain){const address=provider.getWallet().address;let dismissed={};try{dismissed=JSON.parse(localStorage.getItem('singular:outcome-notices:v1')||'{}')}catch{}dismissed[`${config.poolManagerAddress}:${address.toLowerCase()}:${t.dataset.refund}:4`]=true;try{localStorage.setItem('singular:outcome-notices:v1',JSON.stringify(dismissed))}catch{}}render()}catch(err){t.disabled=false;t.textContent='Claim refund';alert(err.message)}return}
-    if(t.dataset.dismissNotice){let dismissed={};try{dismissed=JSON.parse(localStorage.getItem('singular:outcome-notices:v1')||'{}')}catch{}dismissed[t.dataset.dismissNotice]=true;try{localStorage.setItem('singular:outcome-notices:v1',JSON.stringify(dismissed))}catch{}outcomeNotice();return}
-    if(t.dataset.claim){t.disabled=true;t.textContent='Confirm claim in wallet…';try{await provider.claimPrize(t.dataset.claim);render()}catch(err){t.disabled=false;t.textContent='Claim prize';alert(err.message)}return}
+    if(t.dataset.refund){t.disabled=true;t.textContent='Confirm refund in wallet…';try{if(onchain)await provider.claimRefund(t.dataset.refund);else provider.claimRefund(t.dataset.refund);if(onchain){const address=provider.getWallet().address;let dismissed={};try{dismissed=JSON.parse(localStorage.getItem('singular:outcome-notices:v1')||'{}')}catch{}dismissed[`${config.poolManagerAddress}:${address.toLowerCase()}:${t.dataset.refund}:4`]=true;try{localStorage.setItem('singular:outcome-notices:v1',JSON.stringify(dismissed))}catch{}}document.getElementById('outcomeNotice')?.remove();render()}catch(err){t.disabled=false;t.textContent='Claim refund';alert(err.message)}return}
+    if(t.dataset.dismissNotice){document.getElementById('outcomeNotice')?.remove();return}
+    if(t.dataset.claim){t.disabled=true;t.textContent='Confirm claim in wallet…';try{await provider.claimPrize(t.dataset.claim);document.getElementById('outcomeNotice')?.remove();render()}catch(err){t.disabled=false;t.textContent='Claim prize';alert(err.message)}return}
     if(action==='reset'&&!onchain){provider.reset();render()}
     if(action==='minus'){qty=Math.max(1,qty-1);render()}
     if(action==='plus'){qty++;render()}
@@ -216,9 +226,15 @@
     provider.subscribe(()=>{if(provider.hasLoadedPools){trackSales();ready=true;renderLive()}});
     (async()=>{try{await provider.refresh();ready=true;if(!renderedWallet)render()}catch(error){if(provider.hasLoadedPools){ready=true;if(!renderedWallet)render();console.warn('Additional pool data unavailable:',error)}else{bootError=error;render()}}})();
     (async()=>{try{if(localStorage.getItem(`singular:wallet-disconnected:${config.chainId}`))return;const id=localStorage.getItem(`singular:selected-wallet:${config.chainId}`),name=localStorage.getItem(`singular:selected-wallet-name:${config.chainId}`);if(id||name){for(let attempt=0;attempt<10&&!walletChoices.has(id)&&![...walletChoices.values()].some(choice=>choice.name===name);attempt++)await new Promise(resolve=>setTimeout(resolve,100));const selected=walletChoices.get(id)||[...walletChoices.values()].find(choice=>choice.name===name);if(selected){provider.setWalletApi(selected.wallet);activeWalletName=selected.name}}if(await provider.restoreWallet())await provider.refresh()}catch(error){console.warn('Wallet restore unavailable:',error.message)}})();
-    setInterval(()=>{if(!document.hidden)provider.syncLive().catch(error=>console.warn('BNB Chain event sync failed:',error.message))},3000);
+    const syncVisible=()=>{
+      provider.syncLive().catch(error=>console.warn('BNB Chain event sync failed:',error.message));
+      const focusedId=page==='pool'?currentId():0;
+      if(focusedId)provider.refreshFocusedPool(focusedId).catch(error=>console.warn('Focused pool state unavailable:',error.message));
+      provider.refreshPendingOutcomes(focusedId).catch(error=>console.warn('Pending draw state unavailable:',error.message));
+    };
+    setInterval(()=>{if(!document.hidden)syncVisible()},3000);
     setInterval(()=>{if(!document.hidden)provider.refresh().catch(error=>console.warn('BNB Chain fallback refresh failed:',error.message))},60000);
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)provider.syncLive().catch(()=>{})});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncVisible()});
   }
   render();
 })();

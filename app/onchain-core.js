@@ -251,6 +251,27 @@
         if (!this.getPool(id)?.participants?.length || fresh.entriesSold !== oldSold) this.refreshTicketOwners(Number(id)).catch(error => console.warn('Ticket-owner lookup unavailable:', error));
       } finally { this.focusedPending = false; }
     }
+    async refreshPendingOutcomes(excludeId = 0) {
+      if (this.pending || this.outcomePending || !this.hasLoadedPools) return;
+      const ids = this.pools.filter(pool => pool.contractStatus === 2 && pool.id !== Number(excludeId)).slice(0, 8).map(pool => pool.id);
+      if (!ids.length) return;
+      const walletVersion = this.walletVersion;
+      this.outcomePending = true;
+      try {
+        const updates = await Promise.all(ids.map(id => this.readPool(id)));
+        if (walletVersion !== this.walletVersion) return;
+        const next = new Map(this.pools.map(pool => [pool.id, pool]));
+        let changed = false;
+        for (const pool of updates) {
+          const old = next.get(pool.id);
+          if (old && (old.contractStatus !== pool.contractStatus || old.winner !== pool.winner || old.refundableWei !== pool.refundableWei)) {
+            next.set(pool.id, pool);
+            changed = true;
+          }
+        }
+        if (changed) this.publishPools([...next.values()], walletVersion);
+      } finally { this.outcomePending = false; }
+    }
     async refresh() {
       if (this.pending) { this.refreshQueued = true; return; }
       this.pending = true;

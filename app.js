@@ -24,8 +24,21 @@ function renderPurchaseRibbon(message) {
   const target = document.querySelector('#purchaseRibbon');
   if (!target) return;
   if (!purchaseEvents.length) { target.textContent = message || 'No recent confirmed ticket purchases.'; return; }
+  const previousTime = target.querySelector('.purchase-ribbon__track')?.getAnimations()[0]?.currentTime || 0;
   const items = purchaseEvents.slice(0, 8).map(event => `<a href="./mainnet-app/pool.html?id=${event.poolId}">${shortWallet(event.wallet)} bought <strong>${event.quantity} ${event.quantity === 1 ? 'ticket' : 'tickets'}</strong> in Pool #${event.poolId}</a>`).join('<span aria-hidden="true">✦</span>');
-  target.innerHTML = `<div class="purchase-ribbon__track">${items}<span aria-hidden="true">✦</span>${items}</div>`;
+  const segment = `${items}<span aria-hidden="true">✦</span>`;
+  target.innerHTML = `<div class="purchase-ribbon__track"><div class="purchase-ribbon__group">${segment}</div><div class="purchase-ribbon__group" aria-hidden="true"></div></div>`;
+  const groups = target.querySelectorAll('.purchase-ribbon__group');
+  // A complete group must be wider than the viewport, including when only one
+  // recent purchase exists. Both groups then have exactly the same width.
+  for (let copies = 1; groups[0].scrollWidth <= target.clientWidth + 120 && copies < 32; copies++) {
+    groups[0].insertAdjacentHTML('beforeend', segment);
+  }
+  groups[1].innerHTML = groups[0].innerHTML;
+  const track = target.querySelector('.purchase-ribbon__track');
+  track.style.setProperty('--ribbon-duration', `${Math.max(24, Math.round(groups[0].scrollWidth / 55))}s`);
+  const animation = track.getAnimations()[0];
+  if (animation && previousTime) animation.currentTime = previousTime;
 }
 
 async function refreshPurchases() {
@@ -61,7 +74,10 @@ async function refreshPurchases() {
     }
   } catch (error) {
     console.warn('Recent purchase events unavailable:', error);
-    renderPurchaseRibbon(purchaseEvents.length ? undefined : 'Recent purchases are temporarily unavailable.');
+    if (!ribbonInitialized) {
+      renderPurchaseRibbon(purchaseEvents.length ? undefined : 'Recent purchases are temporarily unavailable.');
+      ribbonInitialized = true;
+    }
   }
 }
 

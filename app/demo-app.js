@@ -111,7 +111,22 @@
     if(kind==='REFUND'&&p.entriesSold===p.capacity)notice.querySelector('.outcome-notice__content p').textContent=`Pool #${p.id} received no VRF result within 6 hours. ${money(Number(window.SingularOnchain.formatBNB(p.refundableWei)))} is refundable to this purchasing wallet. Claiming requires wallet confirmation and network gas.`;
     document.body.append(notice);
   }
-  function render(){if(bootError){root.innerHTML=`<main class="demo-shell"><div class="notice">${networkLabel} configuration error: ${esc(bootError.message)}</div></main>`;return}if(!ready){root.innerHTML=`${header()}<main class="demo-shell"><div class="empty">Loading ${networkLabel} pools…</div></main>`;return}provider.finalizeDue();if(page==='home')home();else if(page==='pool')poolPage();else if(page==='result')resultPage();else if(page==='wallet')walletPage();else listPage(page);if(onchain){decorateOnchain();document.getElementById('walletOptions')?.replaceChildren(...walletOptionNodes())}outcomeNotice()}
+  function cleanDisplayCopy(){
+    if(!mainnet)return;
+    const surfaces=[root,document.querySelector('.outcome-notice')].filter(Boolean);
+    for(const surface of surfaces){
+      const walker=document.createTreeWalker(surface,NodeFilter.SHOW_TEXT);
+      while(walker.nextNode()){
+        const node=walker.currentNode;
+        if(node.parentElement?.closest('script,style,code,pre'))continue;
+        const before=node.nodeValue;
+        if(!before.trim())continue;
+        const after=before.replace(/\.(?!\d)|(?<!\d)\./g,'').replace(/[!?;,·↗→↓↑…©“”‘’]/g,' ').replace(/:(?!\d)|(?<!\d):/g,' ').replace(/\s[-–—/]\s/g,' ').replace(/\s{2,}/g,' ');
+        if(after!==before)node.nodeValue=after;
+      }
+    }
+  }
+  function render(){if(bootError){root.innerHTML=`<main class="demo-shell"><div class="notice">${networkLabel} configuration error: ${esc(bootError.message)}</div></main>`;return}if(!ready){root.innerHTML=`${header()}<main class="demo-shell"><div class="empty">Loading ${networkLabel} pools…</div></main>`;return}provider.finalizeDue();if(page==='home')home();else if(page==='pool')poolPage();else if(page==='result')resultPage();else if(page==='wallet')walletPage();else listPage(page);if(onchain){decorateOnchain();document.getElementById('walletOptions')?.replaceChildren(...walletOptionNodes())}outcomeNotice();cleanDisplayCopy()}
   function setTxStep(i){document.querySelectorAll('.tx-step').forEach((el,n)=>{el.className='tx-step'+(n<i?' done':n===i?' active':'')})}
   async function confirmEntry(){const btn=document.querySelector('[data-action="confirm"]');if(btn)btn.disabled=true;const poolId=currentId(),bought=qty,before=provider.getPool(poolId),previousIds=new Set(before?.myTicketIds||[]);try{let hash=null;if(onchain){const steps=['AWAITING_SIGNATURE','SUBMITTED','CONFIRMING','CONFIRMED'];const result=await provider.enterPool(poolId,bought,(state,txHash)=>{const i=steps.indexOf(state);if(i>=0)setTxStep(i);if(txHash){hash=txHash;const summary=document.getElementById('txSummary');if(summary&&!summary.querySelector('.tx-explorer-link'))summary.insertAdjacentHTML('beforeend',`<a class="tx-explorer-link" href="${config.explorerUrl}/tx/${txHash}" target="_blank" rel="noopener noreferrer">View transaction on BscScan <span>↗</span></a>`)}});hash=result.hash}else{for(let i=0;i<D.TX_STATES.length;i++){setTxStep(i);await new Promise(r=>setTimeout(r,240))}provider.enterPool(poolId,bought);setTxStep(D.TX_STATES.length);await new Promise(r=>setTimeout(r,250))}let updated;try{updated=onchain?await provider.readPool(poolId):provider.getPool(poolId)}catch(readError){console.warn('Entry confirmed; ticket read will retry:',readError);updated=provider.getPool(poolId)||before}const ids=onchain?(updated.myTicketIds||[]).filter(id=>!previousIds.has(id)):Array.from({length:bought},(_,i)=>updated.entriesSold-bought+i+1);purchaseReceipt={poolId,quantity:bought,ids,owned:onchain?(updated.myEntries||0):(position(updated)?.quantity||0),odds:D.chance(onchain?(updated.myEntries||0):(position(updated)?.quantity||0),updated.capacity).toFixed(2)+'%',cost:money(bought*updated.entryPrice),hash};modalState=null;render()}catch(e){const el=document.getElementById('modalError');if(el)el.textContent=e.message;if(btn)btn.disabled=false}}
   document.addEventListener('click',async e=>{
